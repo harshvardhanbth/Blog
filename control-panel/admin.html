@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-900">
+  <div class="max-w-4xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-6">🔑 Admin Panel</h1>
+
+    <!-- Login Form -->
+    <div id="loginBox" class="bg-white p-6 rounded-xl shadow max-w-md mx-auto">
+      <h2 class="text-xl mb-3 font-semibold">Login</h2>
+      <input id="password" type="password" placeholder="Enter Password"
+        class="w-full p-2 border rounded mb-4" />
+      <button onclick="login()"
+        class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+        Login
+      </button>
+    </div>
+
+    <!-- Admin Area -->
+    <div id="adminArea" class="hidden">
+      <!-- Create Post -->
+      <section class="mb-8">
+        <h2 class="text-xl font-semibold mb-3">📝 Create New Post</h2>
+        <input id="title" type="text" placeholder="Post Title"
+          class="w-full p-2 border rounded mb-3" />
+        <textarea id="content" rows="6" placeholder="Write in Markdown..."
+          class="w-full p-2 border rounded mb-3"></textarea>
+        <div class="mb-3">
+          <strong>Preview:</strong>
+          <div id="preview" class="p-3 bg-gray-50 border rounded"></div>
+        </div>
+        <button onclick="savePost()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+          Publish
+        </button>
+      </section>
+
+      <!-- Manage Posts -->
+      <section class="mb-8">
+        <h2 class="text-xl font-semibold mb-3">📂 Manage Posts</h2>
+        <div id="postsList"></div>
+      </section>
+
+      <!-- Backup Restore -->
+      <section>
+        <h2 class="text-xl font-semibold mb-3">💾 Backup & Restore</h2>
+        <button onclick="exportPosts()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mr-2">
+          Export JSON
+        </button>
+        <input type="file" id="importFile" class="mb-2" onchange="importPosts(event)">
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const PASSWORD = "harsh@12";
+
+    function login() {
+      const input = document.getElementById("password").value;
+      if (input === PASSWORD) {
+        document.getElementById("loginBox").classList.add("hidden");
+        document.getElementById("adminArea").classList.remove("hidden");
+      } else {
+        alert("Wrong password!");
+      }
+    }
+
+    function getPosts() {
+      const stored = localStorage.getItem("bca_blog_posts");
+      return stored ? JSON.parse(stored) : [];
+    }
+
+    function setPosts(posts) {
+      localStorage.setItem("bca_blog_posts", JSON.stringify(posts));
+    }
+
+    function renderPosts() {
+      const postsList = document.getElementById("postsList");
+      postsList.innerHTML = "";
+      const posts = getPosts();
+
+      if (posts.length === 0) {
+        postsList.innerHTML = "<p class='text-gray-500'>No posts yet.</p>";
+        return;
+      }
+
+      posts.reverse().forEach((post, index) => {
+        const card = document.createElement("div");
+        card.className = "bg-white p-4 rounded shadow mb-4 hover:shadow-lg transition";
+        card.innerHTML = `
+          <h3 class="text-lg font-semibold">${post.title}</h3>
+          <p class="text-gray-500 text-sm">${post.date}</p>
+          <div class="prose max-w-none mb-2">${marked.parse(post.content)}</div>
+          <button onclick="deletePost(${posts.length - 1 - index})"
+            class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">Delete</button>
+        `;
+        postsList.appendChild(card);
+      });
+    }
+
+    function savePost() {
+      const title = document.getElementById("title").value.trim();
+      const content = document.getElementById("content").value.trim();
+      if (!title || !content) {
+        alert("Please enter title and content.");
+        return;
+      }
+      const posts = getPosts();
+      posts.push({ title, content, date: new Date().toISOString().split("T")[0] });
+      setPosts(posts);
+      document.getElementById("title").value = "";
+      document.getElementById("content").value = "";
+      document.getElementById("preview").innerHTML = "";
+      renderPosts();
+    }
+
+    function deletePost(index) {
+      const posts = getPosts();
+      posts.splice(index, 1);
+      setPosts(posts);
+      renderPosts();
+    }
+
+    function exportPosts() {
+      const posts = getPosts();
+      const blob = new Blob([JSON.stringify(posts, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "bca_blog_backup.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importPosts(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          setPosts(imported);
+          renderPosts();
+          alert("Posts imported successfully!");
+        } catch {
+          alert("Invalid JSON file.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Live Markdown Preview
+    document.getElementById("content")?.addEventListener("input", (e) => {
+      document.getElementById("preview").innerHTML = marked.parse(e.target.value);
+    });
+
+    renderPosts();
+  </script>
+</body>
+</html>
