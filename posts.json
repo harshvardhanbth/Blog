@@ -1,0 +1,12 @@
+[
+  {
+    "title": "Welcome to BCA LOG",
+    "slug": "welcome-to-bca-log",
+    "excerpt": "Your hub for BCA notes, projects, and updates.",
+    "content": "This is the first post. Explore BCA notes, projects, and updates.",
+    "categories": ["News"],
+    "author": "Admin",
+    "isAI": false,
+    "date": "2025-09-09"
+  }
+]
